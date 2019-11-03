@@ -10,6 +10,7 @@ import random
 import requests
 from lxml import etree
 import json
+import time
 
 
 class HttpbinSpiderMiddleware(object):
@@ -188,6 +189,75 @@ class IPProxyDownloadMiddleware(object):
         request.meta["proxy"] = self.ip
 
 
+# 获取前三页中所有ip加入IP池
+# 检测所有的ip并使用
+# 当ip池用尽，重新爬取前三页的ip加入IP池
 class IPProxyProDownloadMiddleware(object):
-    pass
+    def __init__(self):
+        self.num = 1  # 网站的页数
+        self.count = 1  # 获取ip池的次数
+        self.ip_list = []  # IP池
+        self.index = 0  # 300个IP的使用序号
+        self.ip = "http://0.0.0.0"
 
+    # 获取前三页的IP
+    def getIPPool(self):
+        resource_url = 'https://www.xicidaili.com/nn/' + str(self.num)
+        header = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'}
+        response = requests.get(url=resource_url, headers=header)
+        html = etree.HTML(response.text)
+        print("获取IP源网页次数：", self.num, "获取IP池次数：", self.count, "状态：", response)
+        ipSelectors = html.xpath('//tr[@class]')
+        for ipSelector in ipSelectors:
+            ht = ipSelector.xpath('./td/text()')[5].strip().lower()
+            ip = ipSelector.xpath('./td/text()')[0].strip()
+            port = ipSelector.xpath('./td/text()')[1].strip()
+            strIp = ht + "://" + ip + ":" + port
+            self.ip_list.append(strIp)
+        self.num += 1
+        time.sleep(2)  # 对ip网站延时两秒避免被屏蔽
+        if self.num > 3*self.count:
+            print(self.ip_list)
+        if self.num <= 3*self.count:
+            self.getIPPool()
+
+    # 测试IP池中的IP可用性，如果可用就使用该IP进行爬虫
+    def testIp(self):
+        try:
+            strIp = self.ip_list[self.index]  # http://59.57.149.242:9999
+            sp = strIp.split(':')
+            ht = sp[0]
+            ip = {ht: strIp}
+            temp_url = "http://httpbin.org/ip"
+            # 测试网站的请求头设置
+            headers = {
+                'User-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                              'Chrome/69.0.3497.100 Safari/537.36'}
+            response = requests.get(temp_url, headers=headers, proxies=ip, timeout=3)
+            print("%s/%s[%s]，ip:%s可用，测试内容%s" % (self.index + 1, len(self.ip_list), self.count, strIp, response.content))
+            temp_ip = strIp.split(':')[1].replace('//', '')  # 59.57.149.242
+            # 透明代理直接抛出异常进行下一个测试
+            if temp_ip not in response.text:
+                print("XXX透明代理", strIp)
+                raise Exception()
+            self.ip = strIp  # 通过测试的代理
+        except Exception as e:
+            print("--%s/%s[%s]，无效的IP：%s，" % (self.index + 1, len(self.ip_list), self.count, strIp))
+            # 测试下一个IP
+            self.index += 1
+            if self.index > len(self.ip_list) - 1:  # 300
+                self.ip_list = []  # IP池重置
+                self.index = 0  # 使用的IP序号重置
+                self.count += 1
+                self.getIPPool()
+            self.testIp()
+            # IP耗尽，重新爬取网页
+
+    def process_request(self, request, spider):
+        # 初始状态获取ip池
+        if self.ip_list == []:
+            self.getIPPool()
+        self.testIp()
+        # 设置代理
+        request.meta['proxy'] = self.ip

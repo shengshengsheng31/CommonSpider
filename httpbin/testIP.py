@@ -31,6 +31,14 @@
 #
 #
 from typing import Dict
+import requests
 
-dic = {'e': 'd', 't': 'e'}
-print(dic[0])
+# url = "http://httpbin.org/ip"
+# ip = {"https":" https://117.30.112.228:9999"}
+# response = requests.get(url,proxies = ip,timeout = 3)
+# print(response.text)
+
+str1 = "'183.154.55.19'"
+str2 = '{  "origin": "125.119.8.157, 125.119.8.157"}'
+if str1 not in str2:
+    print("yes")
