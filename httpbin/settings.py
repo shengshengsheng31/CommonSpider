@@ -53,9 +53,10 @@ DOWNLOAD_DELAY = 1
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
     # 随机请求头
-    'httpbin.middlewares.UserAgentDownloadMiddleware': 543,
-    # 'httpbin.middlewares.IPProxyDownloadMiddleware': 100,
-    'httpbin.middlewares.IPProxyProDownloadMiddleware': 100
+    'httpbin.middlewares.UserAgentDownloadMiddleware': 100,
+    # 'httpbin.middlewares.IPProxyDownloadMiddleware': 200,
+    'httpbin.middlewares.IPProxyProDownloadMiddleware': 200,
+    'httpbin.middlewares.SeleniumDownloadMiddleware': 300,
 }
 
 # Enable or disable extensions
@@ -67,7 +68,7 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   #  'httpbin.pipelines.AsynPipeline':300,
+    #  'httpbin.pipelines.AsynPipeline':300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

@@ -11,6 +11,8 @@ import requests
 from lxml import etree
 import json
 import time
+from selenium import webdriver
+from scrapy.http.response.html import HtmlResponse
 
 
 class HttpbinSpiderMiddleware(object):
@@ -217,9 +219,9 @@ class IPProxyProDownloadMiddleware(object):
             self.ip_list.append(strIp)
         self.num += 1
         time.sleep(2)  # 对ip网站延时两秒避免被屏蔽
-        if self.num > 3*self.count:
+        if self.num > 3 * self.count:
             print(self.ip_list)
-        if self.num <= 3*self.count:
+        if self.num <= 3 * self.count:
             self.getIPPool()
 
     # 测试IP池中的IP可用性，如果可用就使用该IP进行爬虫
@@ -261,3 +263,27 @@ class IPProxyProDownloadMiddleware(object):
         self.testIp()
         # 设置代理
         request.meta['proxy'] = self.ip
+
+
+# 使用selenium接替scrapy的request，获取ajax数据
+class SeleniumDownloadMiddleware(object):
+    def __init__(self):
+        # web引擎
+        self.driver = webdriver.Chrome(executable_path=r"D:\Program Files (x86)\chromedriver_win32\chromedriver.exe")
+
+    def process_reuest(self, request, spider):
+        self.driver.get(request.url)
+        time.sleep(1)
+        # 对需要点击的ajax数据进行点击
+        try:
+            while True:
+                ajaxData = self.driver.find_element_by_class_name("[classname]")
+                ajaxData.click()
+                time.sleep(0.5)
+                if not ajaxData:
+                    break
+        except Exception as e:
+            print(e)
+        source = self.driver.page_source  # 源网页
+        response = HtmlResponse(url=self.driver.current_url, body=source, request=request, encoding='utf-8')
+        return response
