@@ -91,3 +91,18 @@ ITEM_PIPELINES = {
 # HTTPCACHE_DIR = 'httpcache'
 # HTTPCACHE_IGNORE_HTTP_CODES = []
 # HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+# 分布式改造3，setting设置
+# 重置调度器
+# SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+# # 去重
+# DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+# # 重置pipeline
+# ITEM_PIPELINES = {
+#     'scrapy_redis.pipelines.RedisPipeline': 300,
+# }
+# # 断点续传
+# SCHEDULER_PERSIST = True
+# # redis连接
+# REDIS_HOST = '192.168.123.182'
+# REDIS_PORT = 6379
